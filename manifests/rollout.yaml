@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: nodejs
+  namespace: nodejs
+  labels:
+    app: nodejs
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nodejs
+  template:
+    metadata:
+      labels:
+        app: nodejs
+    spec:
+      nodeSelector:
+        "beta.kubernetes.io/os": linux
+      containers:
+        - name: aks-k8s-rollouts
+          image: aks-k8s-rollouts
+          ports:
+            - name: http
+              containerPort: 1337
+  strategy:
+    blueGreen:
+      activeService: svc-active
+      previewService: svc-preview
+      autoPromotionEnabled: false

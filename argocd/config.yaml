@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: aks-k8s-rollouts
+  namespace: argocd
+spec:
+  destination:
+    namespace: nodejs
+    server: "https://kubernetes.default.svc"
+  source:
+    path: manifests
+    repoURL: "https://github.com/CIRCLECI-GWP/aks-k8s-rollouts"
+    targetRevision: circleci-project-setup
+  project: default
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
