@@ -12,7 +12,4 @@ spec:
     repoURL: "https://github.com/CIRCLECI-GWP/aks-k8s-rollouts"
     targetRevision: circleci-project-setup
   project: default
-  syncPolicy:
-    automated:
-      prune: false
-      selfHeal: false
+
