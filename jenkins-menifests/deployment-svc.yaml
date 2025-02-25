@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-deployment
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      initContainers:
+        - name: set-permissions
+          image: busybox
+          command:
+            - "sh"
+            - "-c"
+            - "chmod -R 777 /var/jenkins_home"
+          volumeMounts:
+            - mountPath: /var/jenkins_home
+              name: jenkins-data
+        - name: install-kubectl
+          image: bitnami/kubectl:latest
+          command:
+            - "sh"
+            - "-c"
+            - "cp /opt/bitnami/kubectl/bin/kubectl /var/jenkins_home/kubectl && chmod +x /var/jenkins_home/kubectl"
+          volumeMounts:
+            - mountPath: /var/jenkins_home
+              name: jenkins-data
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          ports:
+            - containerPort: 8080
+            - containerPort: 50000
+          volumeMounts:
+            - mountPath: /var/jenkins_home
+              name: jenkins-data
+      volumes:
+        - name: jenkins-data
+          persistentVolumeClaim:
+            claimName: jenkins-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-service
+spec:
+  selector:
+    app: jenkins
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30000
+  type: NodePort
