@@ -2,13 +2,16 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // Replace with your Jenkins Docker Hub credentials ID
-        KUBECONFIG = '/path/to/kubeconfig'  // Path to the kubeconfig for Minikube
+        DOCKER_HOME = tool name: 'docker'
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')  // Your Docker Hub credentials ID
+        KUBECTL = '/var/jenkins_home/kubectl'  // Path to kubectl in the Jenkins pod
+        KUBE_TOKEN = credentials('my_kubernetes')  // Jenkins-admin service account token
         ARGOCD_SERVER = 'http://192.168.49.3:30007'  // Replace with your ArgoCD server IP
         ARGOCD_USERNAME = 'admin'
-        ARGOCD_PASSWORD = credentials('argocd-password')  // Replace with your ArgoCD credentials ID
-        DOCKER_IMAGE = "your-dockerhub-username/your-app-name"
-        APP_NAME = "your-app-name"
+        ARGOCD_PASSWORD = credentials('argocd-password')  // ArgoCD credentials ID
+        DOCKER_IMAGE = "daudidrees/aks-k8s-rollouts:latest"
+        APP_NAME = "my-jenkins-rollback-deployments"
+        NAMESPACE = "nodejs"  // Kubernetes namespace for the app
     }
 
     stages {
@@ -21,11 +24,12 @@ pipeline {
         
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
-                }
+                sh "${DOCKER_HOME}/bin/docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
             }
         }
+        
+        // Other stages remain the same
+
 
         stage('Push Docker Image to Docker Hub') {
             steps {
@@ -52,8 +56,13 @@ pipeline {
         stage('Apply Kubernetes Changes') {
             steps {
                 script {
-                    // Apply updated Kubernetes manifests
-                    sh "kubectl apply -k ./manifests --kubeconfig=${KUBECONFIG}"
+                    // Use the jenkins-admin service account token and apply Kubernetes manifests
+                    sh """
+                    export KUBECONFIG=/dev/null
+                    ${KUBECTL} --server=https://kubernetes.default.svc \
+                      --token=${KUBE_TOKEN} --insecure-skip-tls-verify \
+                      apply -k ./manifests -n ${NAMESPACE}
+                    """
                 }
             }
         }
@@ -74,7 +83,6 @@ pipeline {
 
     post {
         always {
-            // Clean up workspace after build
             cleanWs()
         }
         success {
