@@ -30,8 +30,7 @@ spec:
             - "-c"
             - |
               apt-get update && \
-              apt-get install -y docker.io && \
-              apt-get install -y curl && \
+              apt-get install -y git docker.io curl && \
               curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && \
               chmod +x ./kubectl && \
               mv ./kubectl /usr/local/bin/kubectl && \
@@ -51,17 +50,3 @@ spec:
         - name: jenkins-data
           persistentVolumeClaim:
             claimName: jenkins-pvc
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: jenkins-service
-spec:
-  selector:
-    app: jenkins
-  ports:
-    - protocol: TCP
-      port: 8080
-      targetPort: 8080
-      nodePort: 30000
-  type: NodePort
