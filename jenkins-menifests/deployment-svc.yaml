@@ -13,6 +13,30 @@ spec:
       labels:
         app: jenkins
     spec:
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          ports:
+            - containerPort: 8080
+            - containerPort: 50000
+          securityContext:
+            privileged: true  # Required for running Docker inside Jenkins
+            runAsUser: 0  # Run the container as root to ensure permissions for installing packages
+          volumeMounts:
+            - mountPath: /var/jenkins_home
+              name: jenkins-data
+          command:
+            - "sh"
+            - "-c"
+            - |
+              apt-get update && \
+              apt-get install -y docker.io && \
+              apt-get install -y curl && \
+              curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && \
+              chmod +x ./kubectl && \
+              mv ./kubectl /usr/local/bin/kubectl && \
+              service docker start && \
+              java -jar /usr/share/jenkins/jenkins.war
       initContainers:
         - name: set-permissions
           image: busybox
@@ -20,33 +44,6 @@ spec:
             - "sh"
             - "-c"
             - "chmod -R 777 /var/jenkins_home"
-          volumeMounts:
-            - mountPath: /var/jenkins_home
-              name: jenkins-data
-        - name: install-kubectl
-          image: bitnami/kubectl:latest
-          command:
-            - "sh"
-            - "-c"
-            - "cp /opt/bitnami/kubectl/bin/kubectl /var/jenkins_home/kubectl && chmod +x /var/jenkins_home/kubectl"
-          volumeMounts:
-            - mountPath: /var/jenkins_home
-              name: jenkins-data
-        - name: install-docker
-          image: docker:20.10.7-dind  # Using a Docker-in-Docker image
-          command:
-            - "sh"
-            - "-c"
-            - "cp /usr/local/bin/docker /var/jenkins_home/docker && chmod +x /var/jenkins_home/docker"
-          volumeMounts:
-            - mountPath: /var/jenkins_home
-              name: jenkins-data
-      containers:
-        - name: jenkins
-          image: jenkins/jenkins:lts
-          ports:
-            - containerPort: 8080
-            - containerPort: 50000
           volumeMounts:
             - mountPath: /var/jenkins_home
               name: jenkins-data
