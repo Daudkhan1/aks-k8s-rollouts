@@ -8,7 +8,6 @@ jobs:
   argocd-manual-sync:
     docker:
       - image: circleci/node:14  # Updated to valid CircleCI image
-    resource_class: medium  # Resource class applied correctly outside parameters
     parameters:
       server:
         description: Server IP of ArgoCD
@@ -40,7 +39,6 @@ jobs:
   argocd-configure:
     docker:
       - image: circleci/node:14  # Updated to valid CircleCI image
-    resource_class: medium  # Resource class set correctly
     steps:
       - checkout
       - run:
@@ -54,7 +52,6 @@ jobs:
   bump-docker-tag-kustomize:
     docker:
       - image: circleci/node:14  # Updated to valid CircleCI image
-    resource_class: medium  # Resource class set correctly
     steps:
       - run:
           name: Install kustomize
