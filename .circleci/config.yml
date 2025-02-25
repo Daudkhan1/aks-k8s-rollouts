@@ -8,19 +8,16 @@ jobs:
   argocd-manual-sync:
     docker:
       - image: circleci/node:14  # Updated to valid CircleCI image
-    resource_class: medium  # Removed invalid resource class and set to medium (default)
+    resource_class: medium  # Resource class applied correctly outside parameters
     parameters:
       server:
-        description: |
-          Server IP of ArgoCD
+        description: Server IP of ArgoCD
         type: string
       username:
-        description: |
-          Username for ArgoCD
+        description: Username for ArgoCD
         type: string
       password:
-        description: |
-          Password for ArgoCD
+        description: Password for ArgoCD
         type: string
     steps:
       - run:
@@ -43,7 +40,7 @@ jobs:
   argocd-configure:
     docker:
       - image: circleci/node:14  # Updated to valid CircleCI image
-    resource_class: medium  # Set resource class to medium
+    resource_class: medium  # Resource class set correctly
     steps:
       - checkout
       - run:
@@ -57,7 +54,7 @@ jobs:
   bump-docker-tag-kustomize:
     docker:
       - image: circleci/node:14  # Updated to valid CircleCI image
-    resource_class: medium  # Set resource class to medium
+    resource_class: medium  # Resource class set correctly
     steps:
       - run:
           name: Install kustomize
@@ -82,7 +79,7 @@ jobs:
             git config user.email "$GITHUB_EMAIL"
             git config user.name "CircleCI User"
             git checkout $CIRCLE_BRANCH           
-            git add manifests/.
+            git add manifests/kustomization.yaml
             git commit -am "Bumps docker tag [skip ci]"
             git push origin $CIRCLE_BRANCH
 
