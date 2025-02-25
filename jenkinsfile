@@ -2,14 +2,13 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HOME = tool name: 'docker'
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')  // Your Docker Hub credentials ID
         KUBECTL = '/var/jenkins_home/kubectl'  // Path to kubectl in the Jenkins pod
         KUBE_TOKEN = credentials('my_kubernetes')  // Jenkins-admin service account token
         ARGOCD_SERVER = 'http://192.168.49.3:30007'  // Replace with your ArgoCD server IP
         ARGOCD_USERNAME = 'admin'
         ARGOCD_PASSWORD = credentials('argocd-password')  // ArgoCD credentials ID
-        DOCKER_IMAGE = "daudidrees/aks-k8s-rollouts:latest"
+        DOCKER_IMAGE = "daudidrees/aks-k8s-rollouts"
         APP_NAME = "my-jenkins-rollback-deployments"
         NAMESPACE = "nodejs"  // Kubernetes namespace for the app
     }
@@ -21,19 +20,20 @@ pipeline {
                 checkout scm
             }
         }
-        
+
         stage('Build Docker Image') {
             steps {
-                sh "${DOCKER_HOME}/bin/docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                script {
+                    // Docker build command (no need for full path since docker is in /usr/bin)
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                }
             }
         }
-        
-        // Other stages remain the same
-
 
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
+                    // Push the Docker image to Docker Hub
                     docker.withRegistry('https://registry.hub.docker.com', 'DOCKERHUB_CREDENTIALS') {
                         sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
                     }
@@ -44,7 +44,7 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    // Update Kubernetes manifests (example using kustomize)
+                    // Use kustomize to update the image version in Kubernetes manifests
                     sh """
                     cd manifests
                     kustomize edit set image ${APP_NAME}=${DOCKER_IMAGE}:${BUILD_NUMBER}
@@ -56,7 +56,7 @@ pipeline {
         stage('Apply Kubernetes Changes') {
             steps {
                 script {
-                    // Use the jenkins-admin service account token and apply Kubernetes manifests
+                    // Apply Kubernetes manifests using kubectl
                     sh """
                     export KUBECONFIG=/dev/null
                     ${KUBECTL} --server=https://kubernetes.default.svc \
@@ -70,7 +70,7 @@ pipeline {
         stage('Sync with ArgoCD') {
             steps {
                 script {
-                    // Trigger ArgoCD sync
+                    // Trigger ArgoCD to sync the changes
                     sh """
                     argocd login ${ARGOCD_SERVER} --username ${ARGOCD_USERNAME} --password ${ARGOCD_PASSWORD} --insecure
                     argocd app sync ${APP_NAME}
@@ -83,7 +83,7 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            cleanWs()  // Clean up the workspace after the build
         }
         success {
             echo 'Deployment completed successfully!'
