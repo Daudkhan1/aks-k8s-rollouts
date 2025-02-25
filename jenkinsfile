@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HOME = tool name: 'docker'  // Jenkins will resolve this to the installation path under /var/jenkins_home
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')  // Your Docker Hub credentials ID
+        DOCKER_HOME = '/var/jenkins_home/docker'  // Path where Docker is installed in the Jenkins pod
         KUBECTL = '/var/jenkins_home/kubectl'  // Path to kubectl in the Jenkins pod
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')  // Docker Hub credentials ID in Jenkins
         KUBE_TOKEN = credentials('my_kubernetes')  // Jenkins-admin service account token
-        ARGOCD_SERVER = 'http://192.168.49.3:30007'  // Replace with your ArgoCD server IP
+        ARGOCD_SERVER = 'http://192.168.49.3:31735'  // ArgoCD server IP
         ARGOCD_USERNAME = 'admin'
         ARGOCD_PASSWORD = credentials('argocd-password')  // ArgoCD credentials ID
         DOCKER_IMAGE = "daudidrees/aks-k8s-rollouts"
@@ -25,8 +25,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Docker build command using Docker tool installed via Jenkins
-                    sh "${DOCKER_HOME}/docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                    // Use Docker directly from /var/jenkins_home/docker to build the image
+                    sh "${DOCKER_HOME} build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
                 }
             }
         }
@@ -34,10 +34,8 @@ pipeline {
         stage('Push Docker Image to Docker Hub') {
             steps {
                 script {
-                    // Push the Docker image to Docker Hub
-                    docker.withRegistry('https://registry.hub.docker.com', 'DOCKERHUB_CREDENTIALS') {
-                        sh "${DOCKER_HOME}/docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
-                    }
+                    // Push the Docker image to Docker Hub using Docker from /var/jenkins_home/docker
+                    sh "${DOCKER_HOME} push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
                 }
             }
         }
@@ -45,7 +43,7 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    // Use kustomize to update the image version in Kubernetes manifests
+                    // Update Kubernetes manifests using kustomize
                     sh """
                     cd manifests
                     kustomize edit set image ${APP_NAME}=${DOCKER_IMAGE}:${BUILD_NUMBER}
@@ -57,7 +55,7 @@ pipeline {
         stage('Apply Kubernetes Changes') {
             steps {
                 script {
-                    // Apply Kubernetes manifests using kubectl
+                    // Apply Kubernetes manifests using kubectl from /var/jenkins_home/kubectl
                     sh """
                     export KUBECONFIG=/dev/null
                     ${KUBECTL} --server=https://kubernetes.default.svc \
