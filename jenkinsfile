@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HOME = tool name: 'docker'  // Reference to Docker tool installed in Jenkins
+        DOCKER_HOME = tool name: 'docker'  // Jenkins will resolve this to the installation path under /var/jenkins_home
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')  // Your Docker Hub credentials ID
         KUBECTL = '/var/jenkins_home/kubectl'  // Path to kubectl in the Jenkins pod
         KUBE_TOKEN = credentials('my_kubernetes')  // Jenkins-admin service account token
