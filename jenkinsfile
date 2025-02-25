@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        DOCKER_HOME = tool name: 'docker'  // Reference to Docker tool installed in Jenkins
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')  // Your Docker Hub credentials ID
         KUBECTL = '/var/jenkins_home/kubectl'  // Path to kubectl in the Jenkins pod
         KUBE_TOKEN = credentials('my_kubernetes')  // Jenkins-admin service account token
@@ -24,8 +25,8 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Docker build command (no need for full path since docker is in /usr/bin)
-                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                    // Docker build command using Docker tool installed via Jenkins
+                    sh "${DOCKER_HOME}/docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
                 }
             }
         }
@@ -35,7 +36,7 @@ pipeline {
                 script {
                     // Push the Docker image to Docker Hub
                     docker.withRegistry('https://registry.hub.docker.com', 'DOCKERHUB_CREDENTIALS') {
-                        sh "docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                        sh "${DOCKER_HOME}/docker push ${DOCKER_IMAGE}:${BUILD_NUMBER}"
                     }
                 }
             }
