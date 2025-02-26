@@ -5,7 +5,7 @@ metadata:
 spec:
   containers:
     - name: jnlp
-      image: jenkins/inbound-agent:alpine-jdk17
+      image: daudidrees/jenkins-agent:latest
     - name: trivy
       image: aquasec/trivy:latest
       command: ["sleep", "infinity"]
