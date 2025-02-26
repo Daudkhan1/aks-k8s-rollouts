@@ -51,30 +51,31 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    sh "sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml"
+                    sh "sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' manifests/kustomization.yaml"
                 }
             }
         }
 
-stage('Apply Rollout') {
-    steps {
-        sh "kubectl apply -k menifests/"
-        sh "kubectl rollout status rollout/nodejs -n nodejs"
-    }
-}
+        stage('Apply Rollout') {
+            steps {
+                sh "kubectl apply -k manifests/"
+                sh "kubectl rollout status rollout/nodejs -n nodejs"
+            }
+        }
 
-stage('Rollback on Failure') {
-    steps {
-        script {
-            def rollout_status = sh(script: "kubectl get rollout nodejs -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
-            
-            if (rollout_status != "True") {
-                echo "🚨 Deployment failed! Rolling back..."
-                sh "kubectl rollout undo rollout nodejs -n nodejs"
+        stage('Rollback on Failure') {
+            steps {
+                script {
+                    def rollout_status = sh(script: "kubectl get rollout nodejs -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
+                    
+                    if (rollout_status != "True") {
+                        echo "🚨 Deployment failed! Rolling back..."
+                        sh "kubectl rollout undo rollout nodejs -n nodejs"
+                    }
+                }
             }
         }
     }
-}
 
     post {
         always {
