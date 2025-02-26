@@ -51,7 +51,7 @@ pipeline {
         stage('Update Kubernetes Manifests') {
             steps {
                 script {
-                    sh "sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' manifests/kustomization.yaml"
+                    sh "sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml"
                 }
             }
         }
