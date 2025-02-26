@@ -4,6 +4,7 @@ resources:
   - namespace.yaml
   - app-deployment.yaml
   - service.yaml
+  - rbac.yaml
 namespace: nodejs
 images:
   - name: daudidrees/aks-k8s-rollouts
