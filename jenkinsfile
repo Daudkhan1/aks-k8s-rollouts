@@ -8,12 +8,12 @@ pipeline {
     environment {
         DOCKER_IMAGE = "daudidrees/aks-k8s-rollouts"
         APP_NAME = "my-jenkins-rollback-deployments"
-        NAMESPACE = "nodejs"
-        ARGOCD_SERVER = 'http://192.168.49.3:31735'
+        // NAMESPACE = "nodejs"
+        // ARGOCD_SERVER = 'http://192.168.49.3:31735'
         ARGOCD_USERNAME = 'admin'
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         KUBE_TOKEN = credentials('my_kubernetes')
-        ARGOCD_PASSWORD = credentials('argocd-password')
+        // ARGOCD_PASSWORD = credentials('argocd-password')
     }
 
     stages {
