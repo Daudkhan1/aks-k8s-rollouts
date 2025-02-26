@@ -22,10 +22,11 @@ metadata:
   namespace: nodejs
 subjects:
   - kind: ServiceAccount
-    name: default
-    namespace: devops-tools
+    name: default  # Ensure this matches the ServiceAccount used
+    namespace: devops-tools  # Ensure this matches the correct namespace
 roleRef:
   kind: Role
   name: jenkins-deployer
   apiGroup: rbac.authorization.k8s.io
+
 
