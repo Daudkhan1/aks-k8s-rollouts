@@ -5,14 +5,11 @@ metadata:
   namespace: nodejs
 rules:
   - apiGroups: ["apps"]
-    resources: ["deployments", "replicasets"]  # Added "replicasets"
+    resources: ["deployments", "replicasets"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
-    resources: ["services"]
+    resources: ["services", "pods"]  # ✅ Added "pods" here
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  - apiGroups: ["argoproj.io"]
-    resources: ["rollouts"]
-    verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["namespaces"]
     verbs: ["get", "list"]
@@ -25,8 +22,8 @@ metadata:
   namespace: nodejs
 subjects:
   - kind: ServiceAccount
-    name: default  # Ensure this matches the ServiceAccount used
-    namespace: devops-tools  # Ensure this matches the correct namespace
+    name: jenkins-admin
+    namespace: devops-tools
 roleRef:
   kind: Role
   name: jenkins-deployer

@@ -10,7 +10,9 @@ pipeline {
         APP_NAME = "my-jenkins-rollback-deployments"
         ARGOCD_USERNAME = 'admin'
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        KUBE_TOKEN = credentials('my_kubernetes')
+        KUBE_TOKEN = credentials('my_kubernetes')  // K8s token for authentication
+        KUBE_SERVER = "$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')" // Get Kubernetes API server
+        NAMESPACE = "nodejs"
     }
 
     stages {
@@ -58,24 +60,30 @@ pipeline {
 
         stage('Apply Rollout') {
             steps {
-                sh "kubectl apply -k menifests/"
-                sh "kubectl rollout status deployment/nodejs-app -n nodejs || true"
+                script {
+                    sh """
+                    kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} apply -k menifests/
+                    kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} rollout status deployment/nodejs-app -n ${NAMESPACE} || true
+                    """
+                }
             }
         }
 
         stage('Rollback on Failure') {
             when {
                 expression {
-                    def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].reason}'", returnStdout: true).trim()
+                    def rollout_status = sh(script: """
+                        kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} get deployment nodejs-app -n ${NAMESPACE} -o jsonpath='{.status.conditions[?(@.type=="Progressing")].reason}'
+                    """, returnStdout: true).trim()
                     return rollout_status == "ProgressDeadlineExceeded"
                 }
             }
             steps {
                 script {
                     echo "🚨 Deployment exceeded progress deadline! Rolling back..."
-                    sh "kubectl rollout undo deployment nodejs-app -n nodejs --to-revision=0"
+                    sh "kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} rollout undo deployment nodejs-app -n ${NAMESPACE} --to-revision=0"
                     echo "🔥 Force deleting stuck pods..."
-                    sh "kubectl delete pod -l app=nodejs-app -n nodejs --force --grace-period=0"
+                    sh "kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} delete pod -l app=nodejs-app -n ${NAMESPACE} --force --grace-period=0"
                     echo "🔄 Rollback completed!"
                 }
             }
