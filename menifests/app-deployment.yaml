@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: nodejs-container
-          image: daudidrees/aks-k8s-rollouts:latest
+          image: daudidrees/k8s-rollouts:latest
           ports:
             - containerPort: 1337
