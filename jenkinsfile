@@ -10,12 +10,22 @@ pipeline {
         APP_NAME = "my-jenkins-rollback-deployments"
         ARGOCD_USERNAME = 'admin'
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        KUBE_TOKEN = credentials('my_kubernetes')  // K8s token for authentication
-        KUBE_SERVER = "$(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')" // Get Kubernetes API server
+        KUBE_TOKEN = credentials('my_kubernetes')  // Kubernetes token for authentication
         NAMESPACE = "nodejs"
     }
 
     stages {
+        stage('Set Kubernetes Server') {
+            steps {
+                script {
+                    env.KUBE_SERVER = sh(
+                        script: "kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'",
+                        returnStdout: true
+                    ).trim()
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 script {
