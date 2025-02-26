@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jenkins-deployment
-  namespace: default
+  namespace: devops-tools
 spec:
   replicas: 1
   selector:
@@ -13,29 +13,7 @@ spec:
       labels:
         app: jenkins
     spec:
-      containers:
-        - name: jenkins
-          image: jenkins/jenkins:lts
-          ports:
-            - containerPort: 8080
-            - containerPort: 50000
-          securityContext:
-            privileged: true  # Required for running Docker inside Jenkins
-            runAsUser: 0  # Run the container as root to ensure permissions for installing packages
-          volumeMounts:
-            - mountPath: /var/jenkins_home
-              name: jenkins-data
-          command:
-            - "sh"
-            - "-c"
-            - |
-              apt-get update && \
-              apt-get install -y git docker.io curl && \
-              curl -LO "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && \
-              chmod +x ./kubectl && \
-              mv ./kubectl /usr/local/bin/kubectl && \
-              service docker start && \
-              java -jar /usr/share/jenkins/jenkins.war
+      serviceAccountName: jenkins-admin  # ✅ Assign the service account here
       initContainers:
         - name: set-permissions
           image: busybox
@@ -46,7 +24,39 @@ spec:
           volumeMounts:
             - mountPath: /var/jenkins_home
               name: jenkins-data
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          ports:
+            - containerPort: 8080
+            - containerPort: 50000
+          volumeMounts:
+            - mountPath: /var/jenkins_home
+              name: jenkins-data
       volumes:
         - name: jenkins-data
           persistentVolumeClaim:
             claimName: jenkins-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-service
+  namespace: devops-tools
+  annotations:
+      prometheus.io/scrape: 'true'
+      prometheus.io/path:   /
+      prometheus.io/port:   '8080'
+spec:
+  selector: 
+    app: jenkins
+  type: NodePort  
+  ports:
+    - name: httpport
+      port: 8080
+      targetPort: 8080
+      nodePort: 32000
+    - name: jnlpport
+      port: 50000
+      targetPort: 50000
