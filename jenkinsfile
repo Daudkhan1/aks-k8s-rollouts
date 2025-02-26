@@ -8,12 +8,9 @@ pipeline {
     environment {
         DOCKER_IMAGE = "daudidrees/aks-k8s-rollouts"
         APP_NAME = "my-jenkins-rollback-deployments"
-        // NAMESPACE = "nodejs"
-        // ARGOCD_SERVER = 'http://192.168.49.3:31735'
         ARGOCD_USERNAME = 'admin'
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         KUBE_TOKEN = credentials('my_kubernetes')
-        // ARGOCD_PASSWORD = credentials('argocd-password')
     }
 
     stages {
@@ -25,21 +22,21 @@ pipeline {
             }
         }
 
-stage('Build Docker Image') {
-    steps {
-        container('docker') {
-            sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+        stage('Build Docker Image') {
+            steps {
+                container('docker') {
+                    sh "docker build -t ${DOCKER_IMAGE}:${BUILD_NUMBER} ."
+                }
+            }
         }
-    }
-}
 
-stage('Trivy Scan') {
-    steps {
-        container('trivy') {
-            sh "trivy image --exit-code 0 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+        stage('Trivy Scan') {
+            steps {
+                container('trivy') {
+                    sh "trivy image --exit-code 0 --severity HIGH,CRITICAL ${DOCKER_IMAGE}:${BUILD_NUMBER}"
+                }
+            }
         }
-    }
-}
 
         stage('Push Docker Image to Docker Hub') {
             steps {
@@ -51,45 +48,46 @@ stage('Trivy Scan') {
             }
         }
 
-stage('Update Kubernetes Manifests') {
-    steps {
-        script {
-            sh "sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml"
+        stage('Update Kubernetes Manifests') {
+            steps {
+                script {
+                    sh "sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml"
+                }
+            }
         }
-    }
-}
 
-
-stage('Apply Rollout') {
-    steps {
-        script {
-            sh "kubectl apply -k menifests/"
-            sh "kubectl rollout status rollout/nodejs -n nodejs"
+        stage('Apply Rollout') {
+            steps {
+                script {
+                    sh "kubectl apply -k menifests/"
+                    sh "kubectl rollout status rollout/nodejs -n nodejs"
+                }
+            }
         }
-    }
-}
 
-stage('Rollback on Failure') {
-    steps {
-        script {
-            def rollout_status = sh(script: "kubectl get rollout nodejs -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
-            
-            if (rollout_status != "True") {
-                echo "🚨 Deployment failed! Rolling back..."
-                sh "kubectl rollout undo rollout nodejs -n nodejs"
+        stage('Rollback on Failure') {
+            steps {
+                script {
+                    def rollout_status = sh(script: "kubectl get rollout nodejs -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
+                    
+                    if (rollout_status != "True") {
+                        echo "🚨 Deployment failed! Rolling back..."
+                        sh "kubectl rollout undo rollout nodejs -n nodejs"
+                    }
+                }
             }
         }
     }
-}
+
     post {
         always {
             cleanWs()
         }
         success {
-            echo 'Deployment completed successfully!'
+            echo '✅ Deployment completed successfully!'
         }
         failure {
-            echo 'Deployment failed!'
+            echo '❌ Deployment failed!'
         }
     }
 }
