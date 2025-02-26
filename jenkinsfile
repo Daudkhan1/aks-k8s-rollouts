@@ -59,22 +59,24 @@ pipeline {
         stage('Apply Rollout') {
             steps {
                 sh "kubectl apply -k menifests/"
-                sh "kubectl rollout status deployment/nodejs-app -n nodejs"
+                sh "kubectl rollout status deployment/nodejs-app -n nodejs || true"
             }
         }
 
         stage('Rollback on Failure') {
+            when {
+                expression {
+                    def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].reason}'", returnStdout: true).trim()
+                    return rollout_status == "ProgressDeadlineExceeded"
+                }
+            }
             steps {
                 script {
-                    def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].reason}'", returnStdout: true).trim()
-                    
-                    if (rollout_status == "ProgressDeadlineExceeded") {
-                        echo "🚨 Deployment exceeded progress deadline! Rolling back..."
-                        sh "kubectl rollout undo deployment nodejs-app -n nodejs --to-revision=0"
-                        sh "kubectl delete pod -l app=nodejs-app -n nodejs --force --grace-period=0"
-                    } else {
-                        echo "✔ Deployment is progressing or already available."
-                    }
+                    echo "🚨 Deployment exceeded progress deadline! Rolling back..."
+                    sh "kubectl rollout undo deployment nodejs-app -n nodejs --to-revision=0"
+                    echo "🔥 Force deleting stuck pods..."
+                    sh "kubectl delete pod -l app=nodejs-app -n nodejs --force --grace-period=0"
+                    echo "🔄 Rollback completed!"
                 }
             }
         }
