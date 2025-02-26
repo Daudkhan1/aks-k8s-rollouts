@@ -30,11 +30,15 @@ spec:
 
     - name: kubectl
       image: bitnami/kubectl:latest  # Official kubectl image
-      command: ["cat"]
-      tty: true
+      command: ["sleep", "infinity"]
+      volumeMounts:
+        - name: kubectl-bin
+          mountPath: /usr/local/bin 
   volumes:
     - name: trivy-cache
       emptyDir: {}
+    - name: kubectl-bin
+
     - name: docker-socket
       hostPath:
         path: /var/run/docker.sock
