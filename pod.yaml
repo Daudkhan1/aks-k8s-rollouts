@@ -6,6 +6,10 @@ spec:
   containers:
     - name: jnlp
       image: jenkins/inbound-agent:alpine-jdk17
+      volumeMounts:
+        - name: shared-bin
+          mountPath: /usr/local/bin  # Shared path for kubectl
+
     - name: trivy
       image: aquasec/trivy:latest
       command: ["sleep", "infinity"]
@@ -19,6 +23,7 @@ spec:
       env:
         - name: TRIVY_CACHE_DIR
           value: "/root/.cache/trivy"
+
     - name: docker
       image: docker:24.0.7  # Use a stable version
       command: ["sleep", "infinity"]
@@ -32,13 +37,16 @@ spec:
       image: bitnami/kubectl:latest  # Official kubectl image
       command: ["sleep", "infinity"]
       volumeMounts:
-        - name: kubectl-bin
-          mountPath: /usr/local/bin 
+        - name: shared-bin
+          mountPath: /shared-bin
+
   volumes:
     - name: trivy-cache
       emptyDir: {}
     - name: kubectl-bin
-
+      emptyDir: {}
+    - name: shared-bin
+      emptyDir: {}  # Temporary shared volume for kubectl
     - name: docker-socket
       hostPath:
         path: /var/run/docker.sock
