@@ -27,6 +27,11 @@ spec:
           mountPath: /var/run/docker.sock
         - name: workspace
           mountPath: /workspace
+
+    - name: kubectl
+      image: bitnami/kubectl:latest  # Official kubectl image
+      command: ["cat"]
+      tty: true
   volumes:
     - name: trivy-cache
       emptyDir: {}
