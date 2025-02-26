@@ -4,9 +4,15 @@ metadata:
   name: jenkins-deployer
   namespace: nodejs
 rules:
-  - apiGroups: ["", "apps", "rbac.authorization.k8s.io"]
-    resources: ["namespaces", "services", "deployments", "roles", "rolebindings"]
-    verbs: ["get", "create", "update", "patch", "delete", "list"]
+  - apiGroups: [""]
+    resources: ["namespaces", "services"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles", "rolebindings"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
