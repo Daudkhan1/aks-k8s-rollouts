@@ -5,7 +5,7 @@ metadata:
   namespace: nodejs
 rules:
   - apiGroups: ["apps"]
-    resources: ["deployments"]
+    resources: ["deployments", "replicasets"]  # Added "replicasets"
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   - apiGroups: [""]
     resources: ["services"]
@@ -31,5 +31,3 @@ roleRef:
   kind: Role
   name: jenkins-deployer
   apiGroup: rbac.authorization.k8s.io
-
-
