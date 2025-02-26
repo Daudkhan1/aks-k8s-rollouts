@@ -7,8 +7,8 @@ spec:
     - name: jnlp
       image: jenkins/inbound-agent:latest
       volumeMounts:
-        - name: shared-bin
-          mountPath: /shared-bin  # Accessible shared path for kubectl
+        - name: kubectl-bin
+          mountPath: /usr/local/bin  # Mount kubectl to /usr/local/bin
 
     - name: trivy
       image: aquasec/trivy:latest
@@ -20,12 +20,9 @@ spec:
           mountPath: /var/run/docker.sock
         - name: workspace
           mountPath: /workspace
-      env:
-        - name: TRIVY_CACHE_DIR
-          value: "/root/.cache/trivy"
 
     - name: docker
-      image: docker:24.0.7  # Use a stable version
+      image: docker:24.0.7
       command: ["sleep", "infinity"]
       volumeMounts:
         - name: docker-socket
@@ -34,20 +31,20 @@ spec:
           mountPath: /workspace
 
     - name: kubectl
-      image: bitnami/kubectl:latest  # Official kubectl image
-      command: ["/bin/sh", "-c", "cp /opt/bitnami/kubectl/bin/kubectl /shared-bin/kubectl && chmod +x /shared-bin/kubectl && sleep infinity"]
+      image: bitnami/kubectl:latest
+      command: ["/bin/sh", "-c", "cp /opt/bitnami/kubectl/bin/kubectl /kubectl-bin/kubectl && chmod +x /kubectl-bin/kubectl && sleep infinity"]
       volumeMounts:
-        - name: shared-bin
-          mountPath: /shared-bin
+        - name: kubectl-bin
+          mountPath: /kubectl-bin  # Shared volume for moving kubectl to /usr/local/bin
 
   volumes:
     - name: trivy-cache
       emptyDir: {}
-    - name: shared-bin
-      emptyDir: {}  # Temporary shared volume for kubectl
     - name: docker-socket
       hostPath:
         path: /var/run/docker.sock
         type: Socket
     - name: workspace
       emptyDir: {}
+    - name: kubectl-bin
+      emptyDir: {}  # Shared volume for kubectl
