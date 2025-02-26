@@ -58,30 +58,23 @@ pipeline {
 
 stage('Apply Rollout') {
     steps {
-        container('kubectl') {
-            sh "kubectl version"
-            sh "kubectl config view"
-            sh "kubectl get pods -n nodejs"
-            sh "kubectl apply -k menifests/"
-            sh "kubectl rollout status rollout/nodejs -n nodejs"
-        }
+        sh "kubectl apply -k menifests/"
+        sh "kubectl rollout status rollout/nodejs -n nodejs"
     }
 }
 
-
-        stage('Rollback on Failure') {
-            steps {
-                script {
-                    def rollout_status = sh(script: "kubectl get rollout nodejs -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
-                    
-                    if (rollout_status != "True") {
-                        echo "🚨 Deployment failed! Rolling back..."
-                        sh "kubectl rollout undo rollout nodejs -n nodejs"
-                    }
-                }
+stage('Rollback on Failure') {
+    steps {
+        script {
+            def rollout_status = sh(script: "kubectl get rollout nodejs -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
+            
+            if (rollout_status != "True") {
+                echo "🚨 Deployment failed! Rolling back..."
+                sh "kubectl rollout undo rollout nodejs -n nodejs"
             }
         }
     }
+}
 
     post {
         always {
