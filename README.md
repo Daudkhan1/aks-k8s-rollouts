@@ -13,3 +13,7 @@ kubectl patch serviceaccount jenkins-admin -n default -p '{"secrets": [{"name": 
 Retrieve and Decode the Token
 kubectl get secret jenkins-admin-secret -n devops-tool -o jsonpath="{.data.token}" | base64 --decode
 token = 
+
+
+daudidrees/aks-k8s-rollouts:46
+if the deployment is failed the the image
