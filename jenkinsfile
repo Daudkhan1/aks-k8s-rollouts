@@ -56,14 +56,14 @@ pipeline {
             }
         }
 
-        stage('Apply Rollout') {
-            steps {
-                script {
-                    sh "kubectl apply -k menifests/"
-                    sh "kubectl rollout status rollout/nodejs -n nodejs"
-                }
-            }
+stage('Apply Rollout') {
+    steps {
+        container('kubectl') {
+            sh "kubectl apply -k menifests/"
+            sh "kubectl rollout status rollout/nodejs -n nodejs"
         }
+    }
+}
 
         stage('Rollback on Failure') {
             steps {
