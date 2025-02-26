@@ -59,11 +59,15 @@ pipeline {
 stage('Apply Rollout') {
     steps {
         container('kubectl') {
+            sh "kubectl version"
+            sh "kubectl config view"
+            sh "kubectl get pods -n nodejs"
             sh "kubectl apply -k menifests/"
             sh "kubectl rollout status rollout/nodejs -n nodejs"
         }
     }
 }
+
 
         stage('Rollback on Failure') {
             steps {
