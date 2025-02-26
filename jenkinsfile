@@ -17,8 +17,12 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the repository
-                checkout scm
+                script {
+                    // Clone the repository explicitly using the Git plugin
+                    git url: 'https://github.com/Daudkhan1/aks-k8s-rollouts.git',
+                        branch: 'main',  // Specify the branch you want to checkout
+                        // credentialsId: 'your-github-credentials-id'  // GitHub credentials ID in Jenkins
+                }
             }
         }
 

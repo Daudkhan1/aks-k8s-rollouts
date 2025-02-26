@@ -50,18 +50,3 @@ spec:
         - name: jenkins-data
           persistentVolumeClaim:
             claimName: jenkins-pvc
----
-
-apiVersion: v1
-kind: Service
-metadata:
-  name: jenkins-service
-spec:
-  selector:
-    app: jenkins
-  ports:
-    - protocol: TCP
-      port: 8080
-      targetPort: 8080
-      nodePort: 30000
-  type: NodePort
