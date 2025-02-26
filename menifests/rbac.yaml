@@ -1,19 +1,19 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  namespace: nodejs
   name: jenkins-deployer
+  namespace: nodejs
 rules:
-  - apiGroups: ["", "apps"]
-    resources: ["deployments", "services"]
-    verbs: ["get", "create", "update", "delete", "patch"]
+  - apiGroups: ["", "apps", "rbac.authorization.k8s.io"]
+    resources: ["namespaces", "services", "deployments", "roles", "rolebindings"]
+    verbs: ["get", "create", "update", "patch", "delete", "list"]
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  namespace: nodejs
   name: jenkins-deployer-binding
+  namespace: nodejs
 subjects:
   - kind: ServiceAccount
     name: default
@@ -22,3 +22,4 @@ roleRef:
   kind: Role
   name: jenkins-deployer
   apiGroup: rbac.authorization.k8s.io
+
