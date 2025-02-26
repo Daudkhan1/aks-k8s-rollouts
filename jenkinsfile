@@ -59,7 +59,7 @@ pipeline {
         stage('Apply Rollout') {
             steps {
                 sh "kubectl apply -k menifests/"
-                sh "kubectl rollout status rollout/nodejs -n nodejs"
+                sh "kubectl rollout status rollout/nodejs-app -n nodejs"
             }
         }
 
