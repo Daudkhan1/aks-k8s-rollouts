@@ -8,7 +8,7 @@ spec:
       image: jenkins/inbound-agent:latest
       volumeMounts:
         - name: shared-bin
-          mountPath: /shared-bin  # Do not mount /usr/local/bin
+          mountPath: /shared-bin  # Accessible shared path for kubectl
 
     - name: trivy
       image: aquasec/trivy:latest
@@ -35,7 +35,7 @@ spec:
 
     - name: kubectl
       image: bitnami/kubectl:latest  # Official kubectl image
-      command: ["/bin/sh", "-c", "cp /opt/bitnami/kubectl/bin/kubectl /shared-bin/kubectl && sleep infinity"]
+      command: ["/bin/sh", "-c", "cp /opt/bitnami/kubectl/bin/kubectl /shared-bin/kubectl && chmod +x /shared-bin/kubectl && sleep infinity"]
       volumeMounts:
         - name: shared-bin
           mountPath: /shared-bin
