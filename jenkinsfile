@@ -51,43 +51,36 @@ stage('Trivy Scan') {
             }
         }
 
-        stage('Update Kubernetes Manifests') {
-            steps {
-                script {
-                    sh """
-                    cd manifests
-                    kustomize edit set image ${APP_NAME}=${DOCKER_IMAGE}:${BUILD_NUMBER}
-                    """
-                }
-            }
+stage('Update Kubernetes Manifests') {
+    steps {
+        script {
+            sh "sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml"
         }
+    }
+}
 
-        stage('Apply Kubernetes Changes') {
-            steps {
-                script {
-                    sh """
-                    export KUBECONFIG=/dev/null
-                    kubectl --server=https://kubernetes.default.svc \
-                      --token=${KUBE_TOKEN} --insecure-skip-tls-verify \
-                      apply -k ./manifests -n ${NAMESPACE}
-                    """
-                }
-            }
+
+stage('Apply Rollout') {
+    steps {
+        script {
+            sh "kubectl apply -k menifests/"
+            sh "kubectl rollout status rollout/nodejs -n nodejs"
         }
+    }
+}
 
-        stage('Sync with ArgoCD') {
-            steps {
-                script {
-                    sh """
-                    argocd login ${ARGOCD_SERVER} --username ${ARGOCD_USERNAME} --password ${ARGOCD_PASSWORD} --insecure
-                    argocd app sync ${APP_NAME}
-                    argocd app wait ${APP_NAME} --timeout 180
-                    """
-                }
+stage('Rollback on Failure') {
+    steps {
+        script {
+            def rollout_status = sh(script: "kubectl get rollout nodejs -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
+            
+            if (rollout_status != "True") {
+                echo "🚨 Deployment failed! Rolling back..."
+                sh "kubectl rollout undo rollout nodejs -n nodejs"
             }
         }
     }
-
+}
     post {
         always {
             cleanWs()
