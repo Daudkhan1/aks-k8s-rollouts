@@ -70,7 +70,7 @@ pipeline {
                     
                     if (rollout_status != "True") {
                         echo "🚨 Deployment failed! Rolling back..."
-                        sh "kubectl rollout undo rollout nodejs-app -n nodejs"
+                        sh "kubectl rollout undo deployment nodejs-app -n nodejs"
                     }
                 }
             }
