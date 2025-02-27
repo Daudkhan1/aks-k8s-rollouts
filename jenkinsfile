@@ -72,7 +72,7 @@ pipeline {
         stage('Rollback on Failure') {
             steps {
                 script {
-                    def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Available\")].status}'", returnStdout: true).trim()
+                    def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
 
                     if (rollout_status == "False") {
                         echo "🚨 Deployment failed! Rolling back..."
