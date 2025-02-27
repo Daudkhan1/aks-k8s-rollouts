@@ -78,19 +78,22 @@ stage('Apply Rollout') {
 
 
 
-        stage('Rollback on Failure') {
-            steps {
-                script {
-                    def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
-                    
-                    if (rollout_status != "True") {
-                        echo "🚨 Deployment failed! Rolling back..."
-                        sh "kubectl rollout undo deployment nodejs-app -n nodejs"
-                    }
-                }
+stage('Rollback on Failure') {
+    steps {
+        script {
+            // Check if the deployment is in a failed state
+            def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Available\")].status}'", returnStdout: true).trim()
+
+            if (rollout_status != "True") {
+                echo "🚨 Deployment failed! Rolling back..."
+                sh "kubectl rollout undo deployment nodejs-app -n nodejs"
+                sh "kubectl rollout status deployment/nodejs-app -n nodejs"
+            } else {
+                echo "✅ Deployment successful, no rollback needed."
             }
         }
     }
+}
 
     post {
         always {
