@@ -74,7 +74,7 @@ pipeline {
                 script {
                     def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Available\")].status}'", returnStdout: true).trim()
 
-                    if (rollout_status != "True") {
+                    if (rollout_status == "False") {
                         echo "🚨 Deployment failed! Rolling back..."
                         sh "kubectl rollout undo deployment nodejs-app -n nodejs"
                         sh "kubectl rollout status deployment/nodejs-app -n nodejs"
