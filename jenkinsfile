@@ -10,22 +10,11 @@ pipeline {
         APP_NAME = "my-jenkins-rollback-deployments"
         ARGOCD_USERNAME = 'admin'
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
-        KUBE_TOKEN = credentials('my_kubernetes')  // Kubernetes token for authentication
-        NAMESPACE = "nodejs"
+        KUBE_TOKEN = credentials('my_kubernetes')
+        GITHUB_TOKEN = credentials('github-token')
     }
 
     stages {
-        stage('Set Kubernetes Server') {
-            steps {
-                script {
-                    env.KUBE_SERVER = sh(
-                        script: "kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}'",
-                        returnStdout: true
-                    ).trim()
-                }
-            }
-        }
-
         stage('Checkout') {
             steps {
                 script {
@@ -60,41 +49,36 @@ pipeline {
             }
         }
 
-        stage('Update Kubernetes Manifests') {
-            steps {
-                script {
-                    sh "sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml"
-                }
-            }
+stage('Update Kubernetes Manifests') {
+    steps {
+        script {
+            sh """
+            sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml
+            git config --global user.email "daudidrees1024@gmail.com"
+            git config --global user.name "Daudkhan1"
+            git add menifests/kustomization.yaml
+            git commit -m "Update image tag to ${BUILD_NUMBER}"
+            git push https://Daudkhan1:${GITHUB_TOKEN}@github.com/Daudkhan1/aks-k8s-rollouts.git old-branch-right
+            """
         }
-
+    }
+}
         stage('Apply Rollout') {
             steps {
-                script {
-                    sh """
-                    kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} apply -k menifests/
-                    kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} rollout status deployment/nodejs-app -n ${NAMESPACE} || true
-                    """
-                }
+                sh "kubectl apply -k menifests/"
+                sh "kubectl rollout status deployment/nodejs-app -n nodejs"
             }
         }
 
         stage('Rollback on Failure') {
-            when {
-                expression {
-                    def rollout_status = sh(script: """
-                        kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} get deployment nodejs-app -n ${NAMESPACE} -o jsonpath='{.status.conditions[?(@.type=="Progressing")].reason}'
-                    """, returnStdout: true).trim()
-                    return rollout_status == "ProgressDeadlineExceeded"
-                }
-            }
             steps {
                 script {
-                    echo "🚨 Deployment exceeded progress deadline! Rolling back..."
-                    sh "kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} rollout undo deployment nodejs-app -n ${NAMESPACE} --to-revision=0"
-                    echo "🔥 Force deleting stuck pods..."
-                    sh "kubectl --token=${KUBE_TOKEN} --server=${KUBE_SERVER} delete pod -l app=nodejs-app -n ${NAMESPACE} --force --grace-period=0"
-                    echo "🔄 Rollback completed!"
+                    def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
+                    
+                    if (rollout_status != "True") {
+                        echo "🚨 Deployment failed! Rolling back..."
+                        sh "kubectl rollout undo deployment nodejs-app -n nodejs"
+                    }
                 }
             }
         }
