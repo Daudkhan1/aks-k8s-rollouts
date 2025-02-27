@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
         - name: nodejs-container
-          image: daudidrees/k8s-rollouts:latest
+          image: daudidrees/aks-k8s-rollouts  # Remove the ":latest" tag so Kustomize can update it
           ports:
             - containerPort: 1337
