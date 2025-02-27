@@ -8,4 +8,4 @@ namespace: nodejs
 images:
   - name: daudidrees/aks-k8s-rollouts
     newName: daudidrees/aks-k8s-rollouts
-    newTag: "84"
+    newTag: "87"
