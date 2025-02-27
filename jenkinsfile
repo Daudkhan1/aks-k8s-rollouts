@@ -63,12 +63,19 @@ stage('Update Kubernetes Manifests') {
         }
     }
 }
-        stage('Apply Rollout') {
-            steps {
-                sh "kubectl apply -k menifests/"
-                sh "kubectl rollout status deployment/nodejs-app -n nodejs"
-            }
+stage('Apply Rollout') {
+    steps {
+        script {
+            // Fetch the latest code after updating the kustomization.yaml
+            sh "git pull origin main"
+
+            // Apply the deployment with the updated image tag
+            sh "kubectl apply -k menifests/"
+            sh "kubectl rollout status deployment/nodejs-app -n nodejs"
         }
+    }
+}
+
 
         stage('Rollback on Failure') {
             steps {
