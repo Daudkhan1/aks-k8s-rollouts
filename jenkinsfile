@@ -58,7 +58,7 @@ stage('Update Kubernetes Manifests') {
             git config --global user.name "Daudkhan1"
             git add menifests/kustomization.yaml
             git commit -m "Update image tag to ${BUILD_NUMBER}"
-            git push https://Daudkhan1:${GITHUB_TOKEN}@github.com/Daudkhan1/aks-k8s-rollouts.git old-branch-right
+            git push https://Daudkhan1:${GITHUB_TOKEN}@github.com/Daudkhan1/aks-k8s-rollouts.git main
             """
         }
     }
