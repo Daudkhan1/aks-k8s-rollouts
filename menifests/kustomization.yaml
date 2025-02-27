@@ -8,4 +8,8 @@ namespace: nodejs
 images:
   - name: daudidrees/aks-k8s-rollouts  # Must match deployment.yaml image
     newName: daudidrees/aks-k8s-rollouts
+<<<<<<< HEAD
     newTag: "88"
+=======
+    newTag: "89"
+>>>>>>> f80230ecd41d808fe9054dc986511bfd9c87743e
