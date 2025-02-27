@@ -47,8 +47,10 @@ pipeline {
             }
         }
 
-        stage('Update Kubernetes Manifests') {
+        stage('Update Kubernetes Manifests in GitHub') {
             steps {
+                sh "git pull origin main --rebase"
+
                 sh """
                 sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml
                 git config --global user.email "daudidrees1024@gmail.com"
@@ -60,26 +62,31 @@ pipeline {
             }
         }
 
-        stage('Apply Rollout') {
+        stage('Inject Invalid Image Before Deployment') {
             steps {
-                sh """
-                kubectl apply -k menifests/
-                kubectl rollout status deployment/nodejs-app -n nodejs
-                """
+                script {
+                    sh """
+                    sed -i 's|newTag: .*|newTag: "invalid-tag"|' menifests/kustomization.yaml
+                    echo "Updated kustomization.yaml with an invalid tag:"
+                    cat menifests/kustomization.yaml
+                    """
+                }
             }
         }
 
-        stage('Rollback on Failure') {
+        stage('Apply Rollout') {
             steps {
                 script {
-                    def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Progressing\")].status}'", returnStdout: true).trim()
+                    sh "kubectl apply -k menifests/"
+                    
+                    def rollout_status = sh(script: "timeout 60s kubectl rollout status deployment/nodejs-app -n nodejs || echo 'failed'", returnStdout: true).trim()
 
-                    if (rollout_status == "False") {
+                    if (rollout_status.contains("failed")) {
                         echo "🚨 Deployment failed! Rolling back..."
                         sh "kubectl rollout undo deployment nodejs-app -n nodejs"
                         sh "kubectl rollout status deployment/nodejs-app -n nodejs"
                     } else {
-                        echo "✅ Deployment successful, no rollback needed."
+                        echo "✅ Deployment successful!"
                     }
                 }
             }
