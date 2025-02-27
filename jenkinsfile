@@ -1,7 +1,7 @@
 pipeline {
     agent {
         kubernetes {
-            yamlFile 'pod.yaml'  // Reference the pod.yaml stored in the GitHub repository
+            yamlFile 'pod.yaml' 
         }
     }
 
@@ -17,9 +17,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                script {
-                    git url: 'https://github.com/Daudkhan1/aks-k8s-rollouts.git', branch: 'main'
-                }
+                git url: 'https://github.com/Daudkhan1/aks-k8s-rollouts.git', branch: 'main'
             }
         }
 
@@ -49,51 +47,44 @@ pipeline {
             }
         }
 
-stage('Update Kubernetes Manifests') {
-    steps {
-        script {
-            sh """
-            sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml
-            git config --global user.email "daudidrees1024@gmail.com"
-            git config --global user.name "Daudkhan1"
-            git add menifests/kustomization.yaml
-            git commit -m "Update image tag to ${BUILD_NUMBER}"
-            git push https://Daudkhan1:${GITHUB_TOKEN}@github.com/Daudkhan1/aks-k8s-rollouts.git main
-            """
+        stage('Update Kubernetes Manifests') {
+            steps {
+                sh """
+                sed -i 's|newTag: .*|newTag: \"${BUILD_NUMBER}\"|' menifests/kustomization.yaml
+                git config --global user.email "daudidrees1024@gmail.com"
+                git config --global user.name "Daudkhan1"
+                git add menifests/kustomization.yaml
+                git commit -m "Update image tag to ${BUILD_NUMBER}"
+                git push https://Daudkhan1:${GITHUB_TOKEN}@github.com/Daudkhan1/aks-k8s-rollouts.git main
+                """
+            }
         }
-    }
-}
-stage('Apply Rollout') {
-    steps {
-        script {
-            // Ensure the latest changes are pulled before applying
-            sh "git pull origin main"
 
-            // Apply kustomization with the updated image tag
-            sh "kubectl apply -k menifests/"
-            sh "kubectl rollout status deployment/nodejs-app -n nodejs"
+        stage('Apply Rollout') {
+            steps {
+                sh """
+                kubectl apply -k menifests/
+                kubectl rollout status deployment/nodejs-app -n nodejs
+                """
+            }
         }
-    }
-}
 
+        stage('Rollback on Failure') {
+            steps {
+                script {
+                    def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Available\")].status}'", returnStdout: true).trim()
 
-
-stage('Rollback on Failure') {
-    steps {
-        script {
-            // Check if the deployment is in a failed state
-            def rollout_status = sh(script: "kubectl get deployment nodejs-app -n nodejs -o jsonpath='{.status.conditions[?(@.type==\"Available\")].status}'", returnStdout: true).trim()
-
-            if (rollout_status != "True") {
-                echo "🚨 Deployment failed! Rolling back..."
-                sh "kubectl rollout undo deployment nodejs-app -n nodejs"
-                sh "kubectl rollout status deployment/nodejs-app -n nodejs"
-            } else {
-                echo "✅ Deployment successful, no rollback needed."
+                    if (rollout_status != "True") {
+                        echo "🚨 Deployment failed! Rolling back..."
+                        sh "kubectl rollout undo deployment nodejs-app -n nodejs"
+                        sh "kubectl rollout status deployment/nodejs-app -n nodejs"
+                    } else {
+                        echo "✅ Deployment successful, no rollback needed."
+                    }
+                }
             }
         }
     }
-}
 
     post {
         always {
